@@ -334,39 +334,58 @@ function setGoldTheme(active) {
     const hynixNetLabel = document.getElementById('lbl-hynix-net');
     const hynixSvgBar = document.getElementById('seg-hynix-net');
     const legendColor = document.getElementById('legend-hynix-color');
-    const yearToggleBtn2027 = document.getElementById('btn-yr2027');
-    const yearToggleBtn2028 = document.getElementById('btn-yr2028');
     
     if (active) {
-        hynixContainer.classList.add('gold-mode-card');
-        hynixContainer.style.borderLeftColor = 'var(--color-gold)';
-        hynixNetLabel.className = 'bar-amount-large gold';
-        hynixSvgBar.classList.add('gold');
-        legendColor.style.backgroundColor = 'var(--color-gold)';
+        if (hynixContainer) {
+            hynixContainer.classList.add('gold-mode-card');
+            hynixContainer.style.borderLeftColor = 'var(--color-gold)';
+        }
+        if (hynixNetLabel) hynixNetLabel.className = 'bar-amount-large gold';
+        if (hynixSvgBar) hynixSvgBar.classList.add('gold');
+        if (legendColor) legendColor.style.backgroundColor = 'var(--color-gold)';
         
         // Icon change
-        document.getElementById('icon-hynix-panel').className = 'fa-solid fa-crown';
-        document.getElementById('icon-hynix-panel').style.color = 'var(--color-gold)';
+        const iconHynix = document.getElementById('icon-hynix-panel');
+        if (iconHynix) {
+            iconHynix.className = 'fa-solid fa-crown';
+            iconHynix.style.color = 'var(--color-gold)';
+        }
         
         // Slider thumbs
-        document.getElementById('saving-ratio-slider').classList.add('gold');
-        document.getElementById('btn-invest-sp500').classList.add('gold-mode');
-        document.getElementById('btn-invest-nasdaq').classList.add('gold-mode');
+        const savingSlider = document.getElementById('saving-ratio-slider');
+        if (savingSlider) savingSlider.classList.add('gold');
+        
+        const btnSp500 = document.getElementById('btn-invest-sp500');
+        if (btnSp500) btnSp500.classList.add('gold-mode');
+        
+        const btnNasdaq = document.getElementById('btn-invest-nasdaq');
+        if (btnNasdaq) btnNasdaq.classList.add('gold-mode');
     } else {
-        hynixContainer.classList.remove('gold-mode-card');
-        hynixContainer.style.borderLeftColor = 'var(--color-hynix-blue)';
-        hynixNetLabel.className = 'bar-amount-large hynix';
-        hynixSvgBar.classList.remove('gold');
-        legendColor.style.backgroundColor = 'var(--color-hynix-blue)';
+        if (hynixContainer) {
+            hynixContainer.classList.remove('gold-mode-card');
+            hynixContainer.style.borderLeftColor = 'var(--color-hynix-blue)';
+        }
+        if (hynixNetLabel) hynixNetLabel.className = 'bar-amount-large hynix';
+        if (hynixSvgBar) hynixSvgBar.classList.remove('gold');
+        if (legendColor) legendColor.style.backgroundColor = 'var(--color-hynix-blue)';
         
-        document.getElementById('icon-hynix-panel').className = 'fa-solid fa-building-circle-check';
-        document.getElementById('icon-hynix-panel').style.color = 'var(--color-hynix-blue)';
+        const iconHynix = document.getElementById('icon-hynix-panel');
+        if (iconHynix) {
+            iconHynix.className = 'fa-solid fa-building-circle-check';
+            iconHynix.style.color = 'var(--color-hynix-blue)';
+        }
         
-        document.getElementById('saving-ratio-slider').classList.remove('gold');
-        document.getElementById('btn-invest-sp500').classList.remove('gold-mode');
-        document.getElementById('btn-invest-nasdaq').classList.remove('gold-mode');
+        const savingSlider = document.getElementById('saving-ratio-slider');
+        if (savingSlider) savingSlider.classList.remove('gold');
+        
+        const btnSp500 = document.getElementById('btn-invest-sp500');
+        if (btnSp500) btnSp500.classList.remove('gold-mode');
+        
+        const btnNasdaq = document.getElementById('btn-invest-nasdaq');
+        if (btnNasdaq) btnNasdaq.classList.remove('gold-mode');
     }
 }
+
 
 function selectPreset(preset) {
     selectedPreset = preset;
@@ -402,21 +421,8 @@ function switchInvestType(type) {
 
 // --- Main Simulation Core Update ---
 function updateSimulation() {
-    // 1. Get user salary details
     const input = document.getElementById('salary-input');
-    const rawVal = parseFormattedNumber(input.value);
-    
-    let userGross = 0;
-    let userDetails = null;
-    
-    if (inputMode === 'pretax') {
-        userGross = rawVal;
-        userDetails = calculateNetSalary(userGross);
-    } else {
-        const targetAnnualNet = rawVal * 12;
-        userGross = reverseCalculateGross(targetAnnualNet);
-        userDetails = calculateNetSalary(userGross);
-    }
+    const isHynixOnly = (input === null);
     
     // 2. Get Hynix details
     const hynixData = getHynixSalaryData();
@@ -424,29 +430,52 @@ function updateSimulation() {
     // Update Hynix subtexts in cards
     updateHynixPresetDescriptions();
     
-    // 3. Render Large Numbers
-    document.getElementById('lbl-user-net').innerText = formatKoreanPrice(userDetails.annualNet) + ' (월 ' + formatKoreanPrice(userDetails.monthlyNet) + ')';
-    document.getElementById('lbl-user-gross').innerText = formatKoreanPrice(userGross);
+    let userGross = 0;
+    let userDetails = calculateNetSalary(0);
     
-    document.getElementById('lbl-hynix-net').innerText = formatKoreanPrice(hynixData.details.annualNet) + ' (월 ' + formatKoreanPrice(hynixData.details.monthlyNet) + ')';
-    document.getElementById('lbl-hynix-gross').innerText = formatKoreanPrice(hynixData.gross);
+    if (!isHynixOnly) {
+        // 1. Get user salary details
+        const rawVal = parseFormattedNumber(input.value);
+        if (inputMode === 'pretax') {
+            userGross = rawVal;
+            userDetails = calculateNetSalary(userGross);
+        } else {
+            const targetAnnualNet = rawVal * 12;
+            userGross = reverseCalculateGross(targetAnnualNet);
+            userDetails = calculateNetSalary(userGross);
+        }
+        
+        // 3. Render Large Numbers
+        document.getElementById('lbl-user-net').innerText = formatKoreanPrice(userDetails.annualNet) + ' (월 ' + formatKoreanPrice(userDetails.monthlyNet) + ')';
+        document.getElementById('lbl-user-gross').innerText = formatKoreanPrice(userGross);
+    }
+    
+    const lblHynixNet = document.getElementById('lbl-hynix-net');
+    const lblHynixGross = document.getElementById('lbl-hynix-gross');
+    if (lblHynixNet) lblHynixNet.innerText = formatKoreanPrice(hynixData.details.annualNet) + ' (월 ' + formatKoreanPrice(hynixData.details.monthlyNet) + ')';
+    if (lblHynixGross) lblHynixGross.innerText = formatKoreanPrice(hynixData.gross);
     
     // 4. Render Bars (percentages of comparison)
-    const maxNet = Math.max(userDetails.annualNet, hynixData.details.annualNet, 10000000);
-    const userPercent = (userDetails.annualNet / maxNet) * 100;
-    const hynixPercent = (hynixData.details.annualNet / maxNet) * 100;
-    
-    document.getElementById('bar-user-fill').style.width = userPercent + '%';
-    document.getElementById('bar-hynix-fill').style.width = hynixPercent + '%';
+    if (!isHynixOnly) {
+        const maxNet = Math.max(userDetails.annualNet, hynixData.details.annualNet, 10000000);
+        const userPercent = (userDetails.annualNet / maxNet) * 100;
+        const hynixPercent = (hynixData.details.annualNet / maxNet) * 100;
+        
+        document.getElementById('bar-user-fill').style.width = userPercent + '%';
+        document.getElementById('bar-hynix-fill').style.width = hynixPercent + '%';
+    } else {
+        const barHynixFill = document.getElementById('bar-hynix-fill');
+        if (barHynixFill) barHynixFill.style.width = '100%';
+    }
     
     // 5. Render Segmented SVG Bar Chart
-    renderSegmentedChart(userGross, userDetails, hynixData.gross, hynixData.details);
+    renderSegmentedChart(userGross, userDetails, hynixData.gross, hynixData.details, isHynixOnly);
     
     // 6. Update Cumulative line chart
-    updateCumulativeChart();
+    updateCumulativeChart(isHynixOnly);
     
     // 7. Update Witty Cards
-    updateWittyCards(userGross, userDetails, hynixData.gross, hynixData.details);
+    updateWittyCards(userGross, userDetails, hynixData.gross, hynixData.details, isHynixOnly);
     
     // 8. Start/Reset Wage Ticker Timer
     resetWageTicker(hynixData.gross);
@@ -489,7 +518,46 @@ function updateHynixPresetDescriptions() {
 }
 
 // --- Segmented SVG Bar Chart Renderer ---
-function renderSegmentedChart(userGross, userDetails, hynixGross, hynixDetails) {
+function renderSegmentedChart(userGross, userDetails, hynixGross, hynixDetails, isHynixOnly) {
+    if (isHynixOnly) {
+        // Just hide or reset user elements if present, or ignore
+        const segUserNet = document.getElementById('seg-user-net');
+        const segUserIns = document.getElementById('seg-user-ins');
+        const segUserTax = document.getElementById('seg-user-tax');
+        if (segUserNet) {
+            segUserNet.style.height = '0%';
+            segUserIns.style.height = '0%';
+            segUserTax.style.height = '0%';
+        }
+        
+        const maxGross = Math.max(hynixGross, 10000000);
+        const hynixNetHeight = (hynixDetails.annualNet / maxGross) * 100;
+        const hynixInsHeight = (hynixDetails.insurance / maxGross) * 100;
+        const hynixTaxHeight = (hynixDetails.tax / maxGross) * 100;
+        
+        const segHynixNet = document.getElementById('seg-hynix-net');
+        const segHynixIns = document.getElementById('seg-hynix-ins');
+        const segHynixTax = document.getElementById('seg-hynix-tax');
+        if (segHynixNet) {
+            segHynixNet.style.height = hynixNetHeight + '%';
+            segHynixNet.setAttribute('data-tooltip', '하이닉스 실수령: ' + formatKoreanPrice(hynixDetails.annualNet));
+        }
+        if (segHynixIns) {
+            segHynixIns.style.height = hynixInsHeight + '%';
+            segHynixIns.setAttribute('data-tooltip', '하이닉스 4대보험: ' + formatKoreanPrice(hynixDetails.insurance));
+        }
+        if (segHynixTax) {
+            segHynixTax.style.height = hynixTaxHeight + '%';
+            segHynixTax.setAttribute('data-tooltip', '하이닉스 소득세: ' + formatKoreanPrice(hynixDetails.tax));
+        }
+        
+        const lblSvgHynixLabel = document.getElementById('lbl-svg-hynix-label');
+        if (lblSvgHynixLabel) {
+            lblSvgHynixLabel.innerText = selectedPreset + ' (' + selectedYear + '년)';
+        }
+        return;
+    }
+
     const maxGross = Math.max(userGross, hynixGross, 10000000);
     
     // Calculate heights for elements relative to 100% of the container (180px)
@@ -502,45 +570,62 @@ function renderSegmentedChart(userGross, userDetails, hynixGross, hynixDetails) 
     const hynixTaxHeight = (hynixDetails.tax / maxGross) * 100;
     
     // Set user segment heights
-    document.getElementById('seg-user-net').style.height = userNetHeight + '%';
-    document.getElementById('seg-user-net').setAttribute('data-tooltip', '내 실수령액: ' + formatKoreanPrice(userDetails.annualNet));
-    
-    document.getElementById('seg-user-ins').style.height = userInsHeight + '%';
-    document.getElementById('seg-user-ins').setAttribute('data-tooltip', '내 4대보험: ' + formatKoreanPrice(userDetails.insurance));
-    
-    document.getElementById('seg-user-tax').style.height = userTaxHeight + '%';
-    document.getElementById('seg-user-tax').setAttribute('data-tooltip', '내 소득세: ' + formatKoreanPrice(userDetails.tax));
+    const segUserNet = document.getElementById('seg-user-net');
+    const segUserIns = document.getElementById('seg-user-ins');
+    const segUserTax = document.getElementById('seg-user-tax');
+    if (segUserNet) {
+        segUserNet.style.height = userNetHeight + '%';
+        segUserNet.setAttribute('data-tooltip', '내 실수령액: ' + formatKoreanPrice(userDetails.annualNet));
+    }
+    if (segUserIns) {
+        segUserIns.style.height = userInsHeight + '%';
+        segUserIns.setAttribute('data-tooltip', '내 4대보험: ' + formatKoreanPrice(userDetails.insurance));
+    }
+    if (segUserTax) {
+        segUserTax.style.height = userTaxHeight + '%';
+        segUserTax.setAttribute('data-tooltip', '내 소득세: ' + formatKoreanPrice(userDetails.tax));
+    }
     
     // Set Hynix segment heights
-    document.getElementById('seg-hynix-net').style.height = hynixNetHeight + '%';
-    document.getElementById('seg-hynix-net').setAttribute('data-tooltip', '하이닉스 실수령: ' + formatKoreanPrice(hynixDetails.annualNet));
-    
-    document.getElementById('seg-hynix-ins').style.height = hynixInsHeight + '%';
-    document.getElementById('seg-hynix-ins').setAttribute('data-tooltip', '하이닉스 4대보험: ' + formatKoreanPrice(hynixDetails.insurance));
-    
-    document.getElementById('seg-hynix-tax').style.height = hynixTaxHeight + '%';
-    document.getElementById('seg-hynix-tax').setAttribute('data-tooltip', '하이닉스 소득세: ' + formatKoreanPrice(hynixDetails.tax));
+    const segHynixNet = document.getElementById('seg-hynix-net');
+    const segHynixIns = document.getElementById('seg-hynix-ins');
+    const segHynixTax = document.getElementById('seg-hynix-tax');
+    if (segHynixNet) {
+        segHynixNet.style.height = hynixNetHeight + '%';
+        segHynixNet.setAttribute('data-tooltip', '하이닉스 실수령: ' + formatKoreanPrice(hynixDetails.annualNet));
+    }
+    if (segHynixIns) {
+        segHynixIns.style.height = hynixInsHeight + '%';
+        segHynixIns.setAttribute('data-tooltip', '하이닉스 4대보험: ' + formatKoreanPrice(hynixDetails.insurance));
+    }
+    if (segHynixTax) {
+        segHynixTax.style.height = hynixTaxHeight + '%';
+        segHynixTax.setAttribute('data-tooltip', '하이닉스 소득세: ' + formatKoreanPrice(hynixDetails.tax));
+    }
     
     // Label change based on selected preset
-    const presetLabelText = selectedPreset + ' (' + selectedYear + '년)';
-    document.getElementById('lbl-svg-hynix-label').innerText = presetLabelText;
+    const lblSvgHynixLabel = document.getElementById('lbl-svg-hynix-label');
+    if (lblSvgHynixLabel) {
+        lblSvgHynixLabel.innerText = selectedPreset + ' (' + selectedYear + '년)';
+    }
 }
 
 // --- Cumulative Line Chart Renderer ---
-function updateCumulativeChart() {
-    const input = document.getElementById('salary-input');
-    const rawVal = parseFormattedNumber(input.value);
-    
+function updateCumulativeChart(isHynixOnly) {
     let userGross = 0;
-    let userDetails = null;
+    let userDetails = calculateNetSalary(0);
     
-    if (inputMode === 'pretax') {
-        userGross = rawVal;
-        userDetails = calculateNetSalary(userGross);
-    } else {
-        const targetAnnualNet = rawVal * 12;
-        userGross = reverseCalculateGross(targetAnnualNet);
-        userDetails = calculateNetSalary(userGross);
+    if (!isHynixOnly) {
+        const input = document.getElementById('salary-input');
+        const rawVal = parseFormattedNumber(input.value);
+        if (inputMode === 'pretax') {
+            userGross = rawVal;
+            userDetails = calculateNetSalary(userGross);
+        } else {
+            const targetAnnualNet = rawVal * 12;
+            userGross = reverseCalculateGross(targetAnnualNet);
+            userDetails = calculateNetSalary(userGross);
+        }
     }
     
     const hynixData = getHynixSalaryData();
@@ -583,6 +668,7 @@ function updateCumulativeChart() {
     
     // Draw SVG Line chart inside '#line-chart'
     const svg = document.getElementById('line-chart');
+    if (!svg) return;
     svg.innerHTML = ''; // clear
     
     const width = svg.clientWidth || 450;
@@ -595,7 +681,7 @@ function updateCumulativeChart() {
     const graphWidth = width - paddingLeft - paddingRight;
     const graphHeight = height - paddingTop - paddingBottom;
     
-    const maxVal = Math.max(hynixHistory[years], userHistory[years], 100000000);
+    const maxVal = isHynixOnly ? Math.max(hynixHistory[years], 100000000) : Math.max(hynixHistory[years], userHistory[years], 100000000);
     
     // Draw horizontal grid lines
     const gridCount = 5;
@@ -647,31 +733,33 @@ function updateCumulativeChart() {
     const getX = (index) => paddingLeft + ((index / years) * graphWidth);
     const getY = (val) => height - paddingBottom - ((val / maxVal) * graphHeight);
     
-    // Draw User Line & Area
-    let userPoints = '';
-    let userAreaPoints = `M ${getX(0)} ${getY(0)}`;
-    for (let i = 0; i <= years; i++) {
-        const x = getX(i);
-        const y = getY(userHistory[i]);
-        userPoints += `${i === 0 ? 'M' : 'L'} ${x} ${y} `;
-        userAreaPoints += ` L ${x} ${y}`;
+    // Draw User Line & Area (Only if NOT in Hynix-Only mode)
+    if (!isHynixOnly) {
+        let userPoints = '';
+        let userAreaPoints = `M ${getX(0)} ${getY(0)}`;
+        for (let i = 0; i <= years; i++) {
+            const x = getX(i);
+            const y = getY(userHistory[i]);
+            userPoints += `${i === 0 ? 'M' : 'L'} ${x} ${y} `;
+            userAreaPoints += ` L ${x} ${y}`;
+        }
+        userAreaPoints += ` L ${getX(years)} ${getY(0)} Z`;
+        
+        // User Area Fill
+        const userArea = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        userArea.setAttribute('d', userAreaPoints);
+        userArea.setAttribute('fill', 'rgba(16, 185, 129, 0.05)');
+        svg.appendChild(userArea);
+        
+        // User Path Line
+        const userLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        userLine.setAttribute('d', userPoints);
+        userLine.setAttribute('fill', 'none');
+        userLine.setAttribute('stroke', 'var(--color-user)');
+        userLine.setAttribute('stroke-width', '3');
+        userLine.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(userLine);
     }
-    userAreaPoints += ` L ${getX(years)} ${getY(0)} Z`;
-    
-    // User Area Fill
-    const userArea = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    userArea.setAttribute('d', userAreaPoints);
-    userArea.setAttribute('fill', 'rgba(16, 185, 129, 0.05)');
-    svg.appendChild(userArea);
-    
-    // User Path Line
-    const userLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    userLine.setAttribute('d', userPoints);
-    userLine.setAttribute('fill', 'none');
-    userLine.setAttribute('stroke', 'var(--color-user)');
-    userLine.setAttribute('stroke-width', '3');
-    userLine.setAttribute('stroke-linecap', 'round');
-    svg.appendChild(userLine);
     
     // Draw Hynix Line & Area
     let hynixPoints = '';
@@ -706,15 +794,17 @@ function updateCumulativeChart() {
     // Draw Dot points on Year 10 and Year 20 for highlighting
     const highlightIndices = [10, 20];
     highlightIndices.forEach(idx => {
-        // User Dot
-        const uDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        uDot.setAttribute('cx', getX(idx));
-        uDot.setAttribute('cy', getY(userHistory[idx]));
-        uDot.setAttribute('r', '5');
-        uDot.setAttribute('fill', 'var(--color-user)');
-        uDot.setAttribute('stroke', 'white');
-        uDot.setAttribute('stroke-width', '2');
-        svg.appendChild(uDot);
+        // User Dot (Only if NOT in Hynix-Only mode)
+        if (!isHynixOnly) {
+            const uDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            uDot.setAttribute('cx', getX(idx));
+            uDot.setAttribute('cy', getY(userHistory[idx]));
+            uDot.setAttribute('r', '5');
+            uDot.setAttribute('fill', 'var(--color-user)');
+            uDot.setAttribute('stroke', 'white');
+            uDot.setAttribute('stroke-width', '2');
+            svg.appendChild(uDot);
+        }
         
         // Hynix Dot
         const hDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -726,8 +816,7 @@ function updateCumulativeChart() {
         hDot.setAttribute('stroke-width', '2');
         svg.appendChild(hDot);
         
-        // Text labels for the wealth difference
-        const gapVal = hynixHistory[idx] - userHistory[idx];
+        // Text labels for highlights
         const gapText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         gapText.setAttribute('x', getX(idx));
         gapText.setAttribute('y', getY(hynixHistory[idx]) - 12);
@@ -735,7 +824,13 @@ function updateCumulativeChart() {
         gapText.setAttribute('font-size', '9.5px');
         gapText.setAttribute('fill', isJackpot ? 'var(--color-gold)' : 'var(--color-hynix-blue)');
         gapText.setAttribute('font-weight', '800');
-        gapText.textContent = idx + '년 격차: ' + formatKoreanPriceCompact(gapVal);
+        
+        if (isHynixOnly) {
+            gapText.textContent = idx + '년 자산: ' + formatKoreanPriceCompact(hynixHistory[idx]);
+        } else {
+            const gapVal = hynixHistory[idx] - userHistory[idx];
+            gapText.textContent = idx + '년 격차: ' + formatKoreanPriceCompact(gapVal);
+        }
         svg.appendChild(gapText);
     });
 }
@@ -764,12 +859,11 @@ function resetWageTicker(annualSalary) {
     
     const isJackpot = (selectedYear === '2027' || selectedYear === '2028');
     
-    if (isJackpot) {
-        badge.className = 'ticker-badge gold';
-        tickerElem.className = 'witty-value gold';
-    } else {
-        badge.className = 'ticker-badge';
-        tickerElem.className = 'witty-value';
+    if (badge) {
+        badge.className = isJackpot ? 'ticker-badge gold' : 'ticker-badge';
+    }
+    if (tickerElem) {
+        tickerElem.className = isJackpot ? 'witty-value gold' : 'witty-value';
     }
     
     tickerInterval = setInterval(() => {
@@ -777,47 +871,72 @@ function resetWageTicker(annualSalary) {
         // 소수점 이하 포맷팅 시, 정수부만 콤마를 찍고 소수점은 분리하여 표시 (안전하고 완벽한 포맷팅)
         const parts = currentTickerAmount.toFixed(1).split('.');
         const formattedInt = parseInt(parts[0], 10).toLocaleString('ko-KR');
-        tickerElem.innerText = formattedInt + '.' + parts[1] + '원';
+        if (tickerElem) {
+            tickerElem.innerText = formattedInt + '.' + parts[1] + '원';
+        }
     }, 100);
 }
 
 // --- Witty Micro-Analyses Card Updates ---
-function updateWittyCards(userGross, userDetails, hynixGross, hynixDetails) {
+function updateWittyCards(userGross, userDetails, hynixGross, hynixDetails, isHynixOnly) {
     const isJackpot = (selectedYear === '2027' || selectedYear === '2028');
     
-    // 1. Starbucks Challenge
-    // Coffee price is 4,500 KRW
-    const gap = Math.max(0, hynixDetails.annualNet - userDetails.annualNet);
-    const coffeePrice = 4500;
-    const coffeePerYear = coffeePrice * 365;
-    
+    // 1. Starbucks Challenge -> Hynix Pride Starbucks Infusion
     const starbucksVal = document.getElementById('val-starbucks');
     const starbucksDesc = document.getElementById('desc-starbucks');
     
-    if (gap <= 0) {
-        starbucksVal.innerText = '비교 완료!';
-        starbucksDesc.innerText = '축하합니다! 이미 하이닉스 대조군보다 소득이 높으므로 인내하실 필요가 전혀 없습니다. 커피를 마구 드셔도 됩니다!';
-        starbucksVal.className = 'witty-value';
+    if (isHynixOnly) {
+        if (starbucksVal && starbucksDesc) {
+            const coffeePrice = 4500;
+            const annualNet = hynixDetails.annualNet;
+            const coffeeCount = Math.floor(annualNet / coffeePrice);
+            starbucksVal.innerText = `연간 약 ${formatNumber(coffeeCount)}잔`;
+            starbucksDesc.innerText = `당신의 압도적인 세후 실수령액(${formatKoreanPrice(annualNet)})만으로 매일 스타벅스 아메리카노(4,500원)를 약 ${Math.floor(coffeeCount / 365)}잔씩 아끼지 않고 무제한으로 마실 수 있습니다. 커피값 걱정은 완전히 접어두세요!`;
+            starbucksVal.className = isJackpot ? 'witty-value gold' : 'witty-value';
+        }
     } else {
-        const years = gap / coffeePerYear;
-        starbucksVal.innerText = formatYearsKorean(years);
-        starbucksDesc.innerText = `매일 스타벅스 아메리카노(4,500원)를 한 잔도 안 마시고 저축해서, 하이닉스 대조군 직원과의 1년 세후 소득 차이(${formatKoreanPrice(gap)})를 메우려면 걸리는 시간입니다.`;
-        starbucksVal.className = isJackpot ? 'witty-value gold' : 'witty-value';
+        const gap = Math.max(0, hynixDetails.annualNet - userDetails.annualNet);
+        const coffeePrice = 4500;
+        const coffeePerYear = coffeePrice * 365;
+        
+        if (starbucksVal && starbucksDesc) {
+            if (gap <= 0) {
+                starbucksVal.innerText = '비교 완료!';
+                starbucksDesc.innerText = '축하합니다! 이미 하이닉스 대조군보다 소득이 높으므로 인내하실 필요가 전혀 없습니다. 커피를 마구 드셔도 됩니다!';
+                starbucksVal.className = 'witty-value';
+            } else {
+                const years = gap / coffeePerYear;
+                starbucksVal.innerText = formatYearsKorean(years);
+                starbucksDesc.innerText = `매일 스타벅스 아메리카노(4,500원)를 한 잔도 안 마시고 저축해서, 하이닉스 대조군 직원과의 1년 세후 소득 차이(${formatKoreanPrice(gap)})를 메우려면 걸리는 시간입니다.`;
+                starbucksVal.className = isJackpot ? 'witty-value gold' : 'witty-value';
+            }
+        }
     }
     
-    // 2. Breathing Sudden Wealth Chase
+    // 2. Breathing Sudden Wealth Chase -> Hynix Wealth Acceleration Card
     const breathingVal = document.getElementById('val-breathing');
     const breathingDesc = document.getElementById('desc-breathing');
     
-    if (userDetails.annualNet <= 0) {
-        breathingVal.innerText = '추적 불가능';
-        breathingDesc.innerText = '연 소득을 입력해 주셔야 저축을 통한 추적이 시작됩니다.';
-        breathingVal.className = 'witty-value';
+    if (isHynixOnly) {
+        if (breathingVal && breathingDesc) {
+            const compoundInterest10Yr = hynixDetails.annualNet * 10 * 1.5; // rough estimate
+            breathingVal.innerText = '자산 가속 ' + (savingRatio >= 50 ? '특급' : '우수');
+            breathingDesc.innerText = `선택하신 직급에서 ${savingRatio}%의 저축률로 S&P 500 또는 NASDAQ 복리 투자 시, 10년 뒤 원리금 포함 약 ${formatKoreanPrice(compoundInterest10Yr)}의 대규모 자산을 축적하며 특급 성장 가도에 도달합니다!`;
+            breathingVal.className = isJackpot ? 'witty-value gold' : 'witty-value';
+        }
     } else {
-        const yearsNeeded = hynixDetails.annualNet / userDetails.annualNet;
-        breathingVal.innerText = formatYearsKorean(yearsNeeded);
-        breathingDesc.innerText = `당신이 오늘부터 10원도 쓰지 않고(숨만 쉬며 연 소득 100% 저축) 모아야 하이닉스 대조군의 '단 1년 세후 실수령액'인 ${formatKoreanPrice(hynixDetails.annualNet)}을 따라잡을 수 있습니다.`;
-        breathingVal.className = isJackpot ? 'witty-value gold' : 'witty-value';
+        if (breathingVal && breathingDesc) {
+            if (userDetails.annualNet <= 0) {
+                breathingVal.innerText = '추적 불가능';
+                breathingDesc.innerText = '연 소득을 입력해 주셔야 저축을 통한 추적이 시작됩니다.';
+                breathingVal.className = 'witty-value';
+            } else {
+                const yearsNeeded = hynixDetails.annualNet / userDetails.annualNet;
+                breathingVal.innerText = formatYearsKorean(yearsNeeded);
+                breathingDesc.innerText = `당신이 오늘부터 10원도 쓰지 않고(숨만 쉬며 연 소득 100% 저축) 모아야 하이닉스 대조군의 '단 1년 세후 실수령액'인 ${formatKoreanPrice(hynixDetails.annualNet)}을 따라잡을 수 있습니다.`;
+                breathingVal.className = isJackpot ? 'witty-value gold' : 'witty-value';
+            }
+        }
     }
     
     // 3. Tax Patriotic Contributor scale (Click-to-Cycle)
@@ -1126,15 +1245,18 @@ function handleNgfInvestmentSlider(value) {
         lblInvestment.innerText = formatKoreanPrice(ngfAnnualInvestment) + ' (월 ' + formatKoreanPrice(Math.floor(ngfAnnualInvestment / 12)) + ')';
     }
     
-    // Sync active plan buttons based on value
+    // Sync active plan buttons based on value (handles both index.html and hynix.html buttons)
     const btnBalance = document.getElementById('ngf-plan-balance');
     const btnMaxRefund = document.getElementById('ngf-plan-maxrefund');
     const btnShield = document.getElementById('ngf-plan-shield');
-    if (btnBalance && btnMaxRefund && btnShield) {
-        btnBalance.classList.toggle('active', ngfAnnualInvestment === 40000000);
-        btnMaxRefund.classList.toggle('active', ngfAnnualInvestment === 70000000);
-        btnShield.classList.toggle('active', ngfAnnualInvestment === 100000000);
-    }
+    const btnTax = document.getElementById('ngf-plan-tax');
+    const btnSuper = document.getElementById('ngf-plan-super');
+    
+    if (btnBalance) btnBalance.classList.toggle('active', ngfAnnualInvestment === 40000000);
+    if (btnMaxRefund) btnMaxRefund.classList.toggle('active', ngfAnnualInvestment === 70000000);
+    if (btnShield) btnShield.classList.toggle('active', ngfAnnualInvestment === 100000000);
+    if (btnTax) btnTax.classList.toggle('active', ngfAnnualInvestment === 30000000);
+    if (btnSuper) btnSuper.classList.toggle('active', ngfAnnualInvestment === 60000000);
     
     updateNgfSimulation();
 }
@@ -1146,6 +1268,10 @@ function selectNgfPlan(plan) {
         ngfAnnualInvestment = 70000000;
     } else if (plan === 'shield') {
         ngfAnnualInvestment = 100000000;
+    } else if (plan === 'tax') {
+        ngfAnnualInvestment = 30000000;
+    } else if (plan === 'super') {
+        ngfAnnualInvestment = 60000000;
     }
     
     const slider = document.getElementById('ngf-investment-slider');

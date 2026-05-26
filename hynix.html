@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SK하이닉스 임직원 전용 자산 대시보드 & 실시간 급여시계</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="SK 하이닉스 임직원들을 위한 전용 자산 및 세후 실수령액 시뮬레이터입니다. 직급별 성과급 팩트를 기반으로 미국 지수 투자 시 자산 누적 시뮬레이션 및 실시간 급여시계를 감상해 보세요.">
+    <meta name="keywords" content="SK하이닉스, 하이닉스 연봉, 실수령액 계산기, S&P 500 복리 계산기, 나스닥 투자 시뮬레이션, 하이닉스 급여시계">
+    <meta property="og:title" content="SK하이닉스 임직원 전용 자산 대시보드 & 실시간 급여시계">
+    <meta property="og:description" content="SK하이닉스 임직원 자긍심 고취용! 직급별 실수령액 및 미국 지수 연동 복리 자산 누적을 즉시 시뮬레이션해 보세요.">
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- PWA Support for Mobile App Experience -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="하이닉스 대시보드">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('PWA Service Worker registered:', reg.scope))
+                    .catch(err => console.log('PWA Service Worker failed:', err));
+            });
+        }
+    </script>
+</head>
+<body>
+
+    <!-- Confetti effect canvas for supercycle celebrations -->
+    <canvas id="confetti" class="confetti-canvas"></canvas>
+
+    <div class="container">
+        
+        <!-- Header Section -->
+        <header>
+            <div class="logo-area" style="justify-content: center;">
+                <span class="logo-badge" style="background: linear-gradient(135deg, #f59e0b, #ff5e00); color: white;"><i class="fa-solid fa-crown"></i> SK hynix PRIDE</span>
+                <span class="logo-badge" style="background: #0f52ba;"><i class="fa-solid fa-gem"></i> 임직원 전용</span>
+            </div>
+            <h1>SK하이닉스 임직원 전용 자산 대시보드</h1>
+            <p>초호황에 따른 직급별 실제 성과급(2026년 2,964% 및 2027~2028년 전망) 데이터를 기반으로 세후 실수령액을 산정하고, 미국 지수 복리 저축 시 나의 10년/20년 뒤 미래 자산 가치를 시뮬레이션해 보세요.</p>
+        </header>
+
+        <!-- Main Navigation Tab Switcher -->
+        <div class="main-tab-switcher">
+            <button class="main-tab-btn active" id="main-tab-salary" onclick="switchMainTab('salary')">
+                <i class="fa-solid fa-chart-line"></i> 자산 성장 시뮬레이터
+            </button>
+            <button class="main-tab-btn" id="main-tab-ngf" onclick="switchMainTab('ngf')">
+                <i class="fa-solid fa-shield-halved"></i> 국민성장펀드 절세 시뮬레이터
+            </button>
+            <button class="main-tab-btn" id="main-tab-clock" onclick="switchMainTab('clock')">
+                <i class="fa-solid fa-clock"></i> 실시간 급여시계
+            </button>
+        </div>
+
+        <!-- Content Tab 1: Salary Simulator (Hynix Only Edition) -->
+        <div id="content-salary" class="main-tab-content active">
+            <!-- Main Layout Grid -->
+            <div class="app-grid">
+                
+                <!-- Left Column: Preset & Savings Input Panel -->
+                <div class="card-panel">
+                    <h2 class="card-title">
+                        <i class="fa-solid fa-id-card" style="color: var(--color-hynix-orange);"></i> 나의 직급 및 조건 설정
+                    </h2>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 20px;">
+                        실제 지급된 2026년 대박 성과급 팩트 및 2027~2028년 영업이익 10% 룰 기반의 예측 데이터를 기반으로 동작합니다.
+                    </p>
+
+                    <!-- Year Toggle Switcher -->
+                    <div class="year-toggle" style="margin-bottom: 24px;">
+                        <button class="year-btn active" id="btn-yr2026" onclick="switchYear('2026')">
+                            <span>2026년 (실제)</span>
+                            <span>영업이익 47.2조 / PS 2,964%</span>
+                        </button>
+                        <button class="year-btn" id="btn-yr2027" onclick="switchYear('2027')">
+                            <span>2027년 (예상)</span>
+                            <span>영업이익 272조 / PS 17,078%</span>
+                        </button>
+                        <button class="year-btn" id="btn-yr2028" onclick="switchYear('2028')">
+                            <span>2028년 (예상)</span>
+                            <span>영업이익 447조 / PS 28,066%</span>
+                        </button>
+                    </div>
+
+                    <!-- Job Presets Grid -->
+                    <div class="presets-grid" style="margin-bottom: 32px;">
+                        <div class="preset-card active" id="preset-CL2" onclick="selectPreset('CL2')">
+                            <div class="preset-title">CL2 (TL 사원)</div>
+                            <div class="preset-desc" id="desc-CL2">기본급: 5,000만 원</div>
+                            <span class="preset-check"></span>
+                        </div>
+                        <div class="preset-card" id="preset-CL3" onclick="selectPreset('CL3')">
+                            <div class="preset-title">CL3 (TL 선임)</div>
+                            <div class="preset-desc" id="desc-CL3">기본급: 6,200만 원</div>
+                            <span class="preset-check"></span>
+                        </div>
+                        <div class="preset-card" id="preset-CL4" onclick="selectPreset('CL4')">
+                            <div class="preset-title">CL4 (TL 책임)</div>
+                            <div class="preset-desc" id="desc-CL4">기본급: 7,800만 원</div>
+                            <span class="preset-check"></span>
+                        </div>
+                        <div class="preset-card" id="preset-CL5" onclick="selectPreset('CL5')">
+                            <div class="preset-title">CL5 (TL 수석)</div>
+                            <div class="preset-desc" id="desc-CL5">기본급: 9,800만 원</div>
+                            <span class="preset-check"></span>
+                        </div>
+                    </div>
+
+                    <h2 class="card-title">
+                        <i class="fa-solid fa-piggy-bank" style="color: var(--color-user);"></i> 저축률 및 자산 증식 조건
+                    </h2>
+
+                    <!-- Input 2: Savings Ratio Slider -->
+                    <div class="slider-container" style="margin-bottom: 24px;">
+                        <div class="slider-info">
+                            <span>실수령액 대비 연간 저축률</span>
+                            <span id="lbl-saving-ratio" style="color: var(--color-user); font-family: var(--font-heading); font-weight: 800;">50%</span>
+                        </div>
+                        <input type="range" min="10" max="100" value="50" step="5" class="slider-input" id="saving-ratio-slider" oninput="updateSavingRatio(this.value)">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px;">
+                            <span>소비 많음 (10%)</span>
+                            <span>균형 저축 (50%)</span>
+                            <span>극한 저축 (100%)</span>
+                        </div>
+                    </div>
+
+                    <!-- Investment Product Selector Buttons -->
+                    <div class="invest-switcher" style="margin-bottom: 20px;">
+                        <button class="invest-btn active" id="btn-invest-cash" onclick="switchInvestType('cash')">
+                            <span>단순 현금 누적</span>
+                            <span>수익률 연 0%</span>
+                        </button>
+                        <button class="invest-btn" id="btn-invest-sp500" onclick="switchInvestType('sp500')">
+                            <span>S&P 500 적립</span>
+                            <span>수익률 연평균 8%</span>
+                        </button>
+                        <button class="invest-btn" id="btn-invest-nasdaq" onclick="switchInvestType('nasdaq')">
+                            <span>NASDAQ 100 적립</span>
+                            <span>수익률 연평균 12%</span>
+                        </button>
+                    </div>
+
+                    <!-- Dynamic SVG Line Chart -->
+                    <div style="position: relative;">
+                        <svg class="line-chart-svg" id="line-chart"></svg>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Visual Dashboard -->
+                <div class="card-panel" id="hynix-dashboard-panel">
+                    <h2 class="card-title">
+                        <i class="fa-solid fa-chart-simple" style="color: var(--color-hynix-orange);"></i> 실수령액 및 세금 분석
+                    </h2>
+                    
+                    <div class="display-flex">
+                        
+                        <!-- Single Comparative summary box -->
+                        <div class="comparison-box">
+                            <div class="bar-container" style="border-left: 4px solid var(--color-hynix-blue); margin-bottom: 0;">
+                                <div class="bar-label">
+                                    <i class="fa-solid fa-building-circle-check" style="color: var(--color-hynix-blue);" id="icon-hynix-panel"></i> 하이닉스 임직원 실수령액 (세후 연)
+                                </div>
+                                <div class="bar-amount-large hynix" id="lbl-hynix-net">0원</div>
+                                <div class="visual-bar-bg">
+                                    <div class="visual-bar-fill hynix" id="bar-hynix-fill" style="width: 100%;"></div>
+                                </div>
+                                <div class="detail-row-sm">
+                                    <span>세전 연 소득 (기본급 + 성과급):</span>
+                                    <span id="lbl-hynix-gross" style="font-weight: 700;">0원</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interactive SVG Segmented Bar Chart (Hynix Breakdown only) -->
+                        <div style="background-color: var(--bg-main); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">세전 연 소득 상세 공제 비중 (실수령액 vs 4대보험 vs 세금)</span>
+                                <span style="font-size: 0.7rem; color: var(--text-muted);"><i class="fa-solid fa-circle-info"></i> 막대 호버 시 상세 금액 표시</span>
+                            </div>
+                            
+                            <!-- Chart Container (Single Bar) -->
+                            <div class="svg-chart-container" id="segmented-bar-chart" style="justify-content: center; gap: 0;">
+                                <!-- Left user hidden/removed, only right Hynix bar exists -->
+                                <div class="svg-bar" style="width: 120px;">
+                                    <div style="display: flex; flex-direction: column; width: 100%; height: 180px; justify-content: flex-end;" id="segment-hynix-container">
+                                        <div class="svg-fill-segment tax" id="seg-hynix-tax" style="height: 0%;" data-tooltip="세금"></div>
+                                        <div class="svg-fill-segment insurance" id="seg-hynix-ins" style="height: 0%;" data-tooltip="4대보험"></div>
+                                        <div class="svg-fill-segment hynix-net" id="seg-hynix-net" style="height: 0%;" data-tooltip="실수령액"></div>
+                                    </div>
+                                    <span class="svg-label" id="lbl-svg-hynix-label">하이닉스</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Legends -->
+                            <div style="display: flex; justify-content: center; gap: 14px; margin-top: 18px; font-size: 0.7rem; font-weight: 700;">
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="width: 10px; height: 10px; background-color: var(--color-hynix-blue); display: inline-block; border-radius: 2px;"></span> 실수령액
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="width: 10px; height: 10px; background-color: #fbbf24; display: inline-block; border-radius: 2px;"></span> 4대보험
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <span style="width: 10px; height: 10px; background-color: #ef4444; display: inline-block; border-radius: 2px;"></span> 근로소득세
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row: 4 Hynix Pride Cards -->
+            <div class="witty-grid" style="margin-top: 24px;">
+                <!-- Card 1: Starbucks challenge (Hynix Pride Edition) -->
+                <div class="witty-card" id="card-starbucks">
+                    <span class="witty-icon">☕</span>
+                    <h4 class="witty-title">기적의 스타벅스 아아 무제한 힐링</h4>
+                    <div class="witty-value" id="val-starbucks">연 0잔</div>
+                    <p class="witty-desc" id="desc-starbucks">나의 압도적인 세후 연 소득만으로 매일 아아(4,500원)를 아낌없이 무제한으로 마실 수 있는 컵 규모입니다. 커피값 한 푼도 아끼지 마세요!</p>
+                </div>
+                
+                <!-- Card 2: Hynix ticking salary timer -->
+                <div class="witty-card" id="card-timer" onclick="switchMainTab('clock')" style="cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease;">
+                    <span class="ticker-badge" id="badge-ticker">Ticking</span>
+                    <span class="witty-icon">⏱️</span>
+                    <h4 class="witty-title">실시간 급여 시계 (클릭 이동)</h4>
+                    <div class="witty-value" id="val-timer">0원</div>
+                    <p class="witty-desc" id="desc-timer">당신이 이 대시보드를 켜놓고 흐뭇하게 바라보는 동안에도, 숨만 쉬며 통장에 10ms 단위로 쏟아지고 있는 실시간 적립 금액입니다.</p>
+                </div>
+                
+                <!-- Card 3: Asset Acceleration Card -->
+                <div class="witty-card" id="card-breathing">
+                    <span class="witty-icon">🚀</span>
+                    <h4 class="witty-title">나의 10년 자산 가속 지수</h4>
+                    <div class="witty-value" id="val-breathing">자산 가속 우수</div>
+                    <p class="witty-desc" id="desc-breathing">선택한 저축률로 S&P 500 또는 NASDAQ 지수 연동 적립 시, 복리의 기적에 의해 10년 뒤 도달하게 될 거대한 스케일의 자산 가치입니다.</p>
+                </div>
+                
+                <!-- Card 4: Tax patriotic contributor scale -->
+                <div class="witty-card" id="card-tax" onclick="cycleTaxPatriotExample()" style="cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease;">
+                    <span class="witty-icon" id="icon-tax">🍱</span>
+                    <h4 class="witty-title" id="title-tax">소득세 기반 사회 기여 척도 (클릭 전환)</h4>
+                    <div class="witty-value" id="val-tax" style="color: var(--color-user);">아동 급식 0끼</div>
+                    <p class="witty-desc" id="desc-tax">당신이 대한민국 사회를 위해 납부하는 소득세(연 수천만 원)가 지원할 수 있는 복지 기여 규모입니다. 카드를 누르면 5가지 사회 공헌 예시가 순환됩니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Tab 2: National Growth Fund Simulator (NGF) -->
+        <div id="content-ngf" class="main-tab-content">
+            <div class="app-grid">
+                
+                <!-- Left Column: Input Panel -->
+                <div class="card-panel">
+                    <h2 class="card-title">
+                        <i class="fa-solid fa-shield-halved" style="color: var(--color-hynix-blue);"></i> 국민성장펀드 혜택 설정
+                    </h2>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 24px;">
+                        하이닉스 직원의 직급/연도별 예상 세전 총소득을 과세표준으로 삼아 5년 만기 예상 혜택을 한눈에 시뮬레이션합니다.
+                    </p>
+
+                    <!-- Hynix Direct Target Income Display (With built-in mini switches) -->
+                    <div class="sync-banner" style="border-color: var(--color-hynix-blue); background-color: rgba(15, 82, 186, 0.01); display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 22px 20px; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); margin-bottom: 24px; position: relative;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                            <i class="fa-solid fa-building-circle-check" style="color: var(--color-hynix-blue); font-size: 1rem;"></i>
+                            <span style="font-size: 0.88rem; font-weight: 800; color: var(--color-hynix-blue);">하이닉스 대상자 조건 즉시 선택</span>
+                        </div>
+                        
+                        <!-- Mini Preset Selector Row 1: Grade -->
+                        <div style="width: 100%; display: flex; align-items: center; gap: 10px; font-size: 0.78rem;">
+                            <span style="font-weight: 700; color: var(--text-secondary); width: 60px; flex-shrink: 0;">직급 선택:</span>
+                            <div class="mini-switcher-row" style="display: flex; gap: 6px; flex: 1; flex-wrap: wrap;">
+                                <button class="mini-switch-btn" id="ngf-mini-CL2" onclick="selectNgfPreset('CL2')">CL2 (사원)</button>
+                                <button class="mini-switch-btn" id="ngf-mini-CL3" onclick="selectNgfPreset('CL3')">CL3 (선임)</button>
+                                <button class="mini-switch-btn" id="ngf-mini-CL4" onclick="selectNgfPreset('CL4')">CL4 (책임)</button>
+                                <button class="mini-switch-btn" id="ngf-mini-CL5" onclick="selectNgfPreset('CL5')">CL5 (수석)</button>
+                            </div>
+                        </div>
+
+                        <!-- Mini Preset Selector Row 2: Year -->
+                        <div style="width: 100%; display: flex; align-items: center; gap: 10px; font-size: 0.78rem;">
+                            <span style="font-weight: 700; color: var(--text-secondary); width: 60px; flex-shrink: 0;">연도 선택:</span>
+                            <div class="mini-switcher-row" style="display: flex; gap: 6px; flex: 1;">
+                                <button class="mini-switch-btn" id="ngf-mini-2026" onclick="selectNgfYear('2026')">2026 실제</button>
+                                <button class="mini-switch-btn" id="ngf-mini-2027" onclick="selectNgfYear('2027')">2027 예상</button>
+                                <button class="mini-switch-btn" id="ngf-mini-2028" onclick="selectNgfYear('2028')">2028 예상</button>
+                            </div>
+                        </div>
+
+                        <!-- Info Output display -->
+                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: baseline; border-top: 1px dashed var(--border-color); padding-top: 12px; margin-top: 2px;">
+                            <span id="lbl-ngf-target-job" style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);">CL2 (TL 사원) / 2026년</span>
+                            <span id="lbl-ngf-salary" style="font-size: 1.35rem; font-family: var(--font-heading); font-weight: 900; color: var(--text-primary);">50,000,000원</span>
+                        </div>
+                    </div>
+
+                    <!-- Input 2: Annual Investment Slider -->
+                    <div class="slider-container" style="margin-bottom: 16px;">
+                        <div class="slider-info">
+                            <span>연간 펀드 투자금액</span>
+                            <span id="lbl-ngf-investment" style="color: var(--color-hynix-blue); font-family: var(--font-heading); font-weight: 800;">30,000,000원</span>
+                        </div>
+                        <input type="range" min="10000000" max="100000000" value="30000000" step="1000000" class="slider-input" id="ngf-investment-slider" oninput="handleNgfInvestmentSlider(this.value)">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px;">
+                            <span>1,000만 (월 83만)</span>
+                            <span>5,000만 (월 416만)</span>
+                            <span>1억 (월 833만)</span>
+                        </div>
+                        <div id="lbl-ngf-cap-warning" class="cap-warning" style="display: none;">
+                            <i class="fa-solid fa-circle-exclamation" style="margin-right: 4px;"></i> 
+                            주의: 5년 누적 납입 한도(총 2억 원)가 초과되어 3년 차부터 납입액이 0원으로 자동 제어됩니다. (5년 평균 연 4,000만 원 권장)
+                        </div>
+                    </div>
+
+                    <!-- Strategic Investment Plan Presets Grid -->
+                    <div class="ngf-plan-selector" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px;">
+                        <button class="ngf-plan-btn" id="ngf-plan-balance" onclick="selectNgfPlan('balance')">
+                            <span class="plan-emoji">💰</span>
+                            <span class="plan-name">가성비 밸런스</span>
+                            <span class="plan-price">연 4천만</span>
+                        </button>
+                        <button class="ngf-plan-btn active" id="ngf-plan-tax" onclick="selectNgfPlan('tax')">
+                            <span class="plan-emoji">🛡️</span>
+                            <span class="plan-name">절세 맥시멈</span>
+                            <span class="plan-price">연 3천만</span>
+                        </button>
+                        <button class="ngf-plan-btn" id="ngf-plan-super" onclick="selectNgfPlan('super')">
+                            <span class="plan-emoji">💎</span>
+                            <span class="plan-name">자산 초호황</span>
+                            <span class="plan-price">연 6천만</span>
+                        </button>
+                    </div>
+
+                    <!-- Input 3: expected internal return -->
+                    <div class="slider-container" style="margin-bottom: 16px;">
+                        <div class="slider-info">
+                            <span>국민성장펀드 만기 예상 세전 수익률 (5년 누적)</span>
+                            <span id="lbl-ngf-return" style="color: var(--color-user); font-family: var(--font-heading); font-weight: 800;">+10%</span>
+                        </div>
+                        <input type="range" min="-30" max="30" value="10" step="1" class="slider-input" id="ngf-return-slider" oninput="handleNgfReturnSlider(this.value)">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px;">
+                            <span>원금 손실 (-30%)</span>
+                            <span>원금 보전 (0%)</span>
+                            <span>고수익 (+30%)</span>
+                        </div>
+                    </div>
+
+                    <!-- Input 3-2: expected internal return (General ETF) -->
+                    <div class="slider-container" style="margin-bottom: 20px;">
+                        <div class="slider-info">
+                            <span>일반 ETF 투자 만기 세전 수익률 (5년 누적)</span>
+                            <span id="lbl-gen-return" style="color: var(--text-secondary); font-family: var(--font-heading); font-weight: 800;">+10%</span>
+                        </div>
+                        <input type="range" min="-30" max="50" value="10" step="1" class="slider-input" id="gen-return-slider" oninput="handleGenReturnSlider(this.value)" style="background: #cbd5e1;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px;">
+                            <span>원금 손실 (-30%)</span>
+                            <span>원금 보전 (0%)</span>
+                            <span>고수익 (+50%)</span>
+                        </div>
+                    </div>
+
+                    <!-- Breakeven Feedback Card -->
+                    <div class="breakeven-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.04), rgba(15, 82, 186, 0.04)); border: 1.5px solid rgba(15, 82, 186, 0.12); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 24px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; font-weight: 800; color: var(--color-hynix-blue);">
+                            <i class="fa-solid fa-calculator" style="color: var(--color-user);"></i>
+                            <span>실시간 손익분기점(Breakeven) 분석</span>
+                        </div>
+                        <p style="font-size: 0.76rem; color: var(--text-secondary); line-height: 1.5; margin: 0;" id="lbl-ngf-breakeven-text">
+                            국민성장펀드가 <strong id="lbl-ngf-breakeven-ngf-rate" style="color: var(--color-hynix-blue); font-weight: 800;">+10.0%</strong> 수익률일 때, 일반 ETF는 <strong id="lbl-ngf-breakeven-rate" style="color: var(--color-gold); font-weight: 900; font-size: 0.95rem;">세전 +31.4%</strong> 이상의 수익을 내야 세후 실수령액이 같아집니다!
+                        </p>
+                    </div>
+
+                    <!-- Input 4: comprehensive tax shield toggle -->
+                    <div class="tax-shield-toggle-card">
+                        <div style="display: flex; flex-direction: column; gap: 4px; max-width: 75%;">
+                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-vault" style="color: var(--color-gold);"></i> 금융소득종합과세 방어막 가동
+                            </span>
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); line-height: 1.4;">
+                                연 이자/배당 소득이 2,000만 원 초과 상태인 자산가 대상. 9.9% 분리과세를 적용하여 최고 49.5%의 종합소득 누진 누출을 철벽 차단합니다.
+                            </span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="ngf-tax-toggle" onchange="handleNgfTaxToggle(this.checked)">
+                            <span class="slider round gold"></span>
+                        </label>
+                    </div>
+
+                    <!-- Audit Console Toggle Button and Panel -->
+                    <div class="audit-console-container" style="margin-top: 24px; border-top: 1px dashed var(--border-color); padding-top: 20px;">
+                        <button class="audit-toggle-btn" onclick="toggleAuditConsole()" style="width: 100%; background: var(--bg-main); border: 1.5px solid var(--border-color); border-radius: 10px; padding: 12px 16px; font-family: var(--font-heading); font-size: 0.8rem; font-weight: 700; color: var(--color-hynix-blue); cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: var(--transition-fast); outline: none;">
+                            <span><i class="fa-solid fa-chart-line" style="color: var(--color-user); margin-right: 6px;"></i> 실시간 세무 감사 콘솔 (Audit Console)</span>
+                            <i class="fa-solid fa-chevron-down" id="audit-arrow" style="transition: transform 0.2s ease;"></i>
+                        </button>
+                        
+                        <!-- Audit Expanded Panel (collapsible) -->
+                        <div id="audit-expanded-panel" style="display: none; background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-top: 12px; font-size: 0.72rem; color: var(--text-secondary); line-height: 1.6; animation: fadeIn 0.3s ease;">
+                            
+                            <!-- Part 1: Tax Base -->
+                            <div class="audit-section" style="margin-bottom: 12px;">
+                                <div style="font-weight: 800; color: var(--text-primary); margin-bottom: 6px; display: flex; justify-content: space-between;">
+                                    <span>1단계: 하이닉스 소득세 과세표준</span>
+                                    <span id="audit-val-salary" style="color: var(--color-hynix-blue);">0원</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px;">
+                                    <span>• 세전 총소득 (급여+PS)</span>
+                                    <span id="audit-step1-gross">0원</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px; color: #ef4444;">
+                                    <span>• 4대보험 본인 부담금 합계</span>
+                                    <span id="audit-step1-insurances">-0원</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px; color: #ef4444;">
+                                    <span>• 인적 및 기타 표준공제</span>
+                                    <span>-1,500,000원</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px; font-weight: 700; border-top: 1px dashed #cbd5e1; padding-top: 4px; margin-top: 4px;">
+                                    <span>최종 산정 소득 과세표준</span>
+                                    <span id="audit-step1-taxbase" style="color: var(--text-primary);">0원</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px; font-weight: 700;">
+                                    <span>나의 종합소득세 최고 한계세율</span>
+                                    <span id="audit-step1-rate" style="color: var(--color-gold);">0.0% (지방세 포함)</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Part 2: Deductions & Refunds -->
+                            <div class="audit-section" style="margin-bottom: 12px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                                <div style="font-weight: 800; color: var(--text-primary); margin-bottom: 6px; display: flex; justify-content: space-between;">
+                                    <span>2단계: 5년 누적 소득공제 환급</span>
+                                    <span id="audit-val-refund" style="color: var(--color-user);">+0원</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px;">
+                                    <span>• 5년 총 납입 원금</span>
+                                    <span id="audit-step2-principal">0원</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px;">
+                                    <span>• 5년 총 소득공제 과표 감면액</span>
+                                    <span id="audit-step2-deduction">0원</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px; font-weight: 700; color: var(--color-user);">
+                                    <span>• 농어촌특별세 비과세 혜택</span>
+                                    <span id="audit-step2-ruraltax">0원 절감 완료!</span>
+                                </div>
+                            </div>
+
+                            <!-- Part 3: Dividend Tax Shield -->
+                            <div class="audit-section" style="margin-bottom: 12px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                                <div style="font-weight: 800; color: var(--text-primary); margin-bottom: 6px; display: flex; justify-content: space-between;">
+                                    <span>3단계: 배당소득 우회 절세 연산</span>
+                                    <span id="audit-val-taxshield" style="color: var(--color-gold);">+0원</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px;">
+                                    <span>• 5년 누적 가상 배당 (연 5.0% 가정)</span>
+                                    <span id="audit-step3-dividend">0원</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px;">
+                                    <span>• 일반 ETF 과세율 (종합과세 연계)</span>
+                                    <span id="audit-step3-genrate">15.4%</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px;">
+                                    <span>• 국민성장펀드 세 특례 분리과세율</span>
+                                    <span>9.9%</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-left: 8px; font-weight: 700; color: var(--color-gold);">
+                                    <span>• 9.9% 분리과세 우회 세금 절감액</span>
+                                    <span id="audit-step3-savings">+0원</span>
+                                </div>
+                            </div>
+
+                            <!-- Part 4: Breakeven Math -->
+                            <div class="audit-section" style="border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                                <div style="font-weight: 800; color: var(--text-primary); margin-bottom: 4px; display: flex; justify-content: space-between;">
+                                    <span>4단계: 손익분기점 역산 증명</span>
+                                    <span id="audit-val-breakeven" style="color: var(--color-hynix-orange);">0.0%</span>
+                                </div>
+                                <div style="font-size: 0.65rem; color: var(--text-muted); line-height: 1.4;">
+                                    공식: [NGF 세후 총액 - 원금] / [원금 * (1 - 일반세율)] = 세전 손익분기점 수익률
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Visual Shield Dash & Receipt -->
+                <div class="card-panel" style="display: flex; flex-direction: column; gap: 24px;">
+                    <h2 class="card-title">
+                        <i class="fa-solid fa-chart-pie" style="color: var(--color-hynix-orange);"></i> 세후 혜택 분석 대시보드
+                    </h2>
+
+                    <!-- Downside protection visual block -->
+                    <div style="background-color: var(--bg-main); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);">원금 대비 만기 평가액 비교 (정부 20% 보호막 효과)</span>
+                            <span id="lbl-shield-status" class="shield-badge inactive">
+                                <i class="fa-solid fa-shield-halved"></i> 보호막 대기중
+                            </span>
+                        </div>
+                        
+                        <div class="ngf-chart-canvas">
+                            <!-- Government protection shield ring overlay -->
+                            <div id="ngf-shield-overlay" class="shield-overlay">
+                                <i class="fa-solid fa-shield-halved" style="font-size: 2.2rem; margin-bottom: 6px; color: var(--color-user);"></i>
+                                <span>정부 20% 우선 손실보전 작동</span>
+                            </div>
+                            
+                            <!-- Bar 1: Normal Investment -->
+                            <div class="ngf-chart-bar-wrap">
+                                <div class="ngf-bar-container">
+                                    <div id="bar-normal-loss" class="ngf-bar-fill loss" style="height: 0%;"></div>
+                                    <div id="bar-normal-gain" class="ngf-bar-fill gain" style="height: 100%;"></div>
+                                </div>
+                                <span class="ngf-bar-label">일반 투자</span>
+                                <span id="lbl-bar-normal-val" class="ngf-bar-val text-muted">1.5억</span>
+                            </div>
+                            
+                            <!-- Bar 2: NGF Investment -->
+                            <div class="ngf-chart-bar-wrap">
+                                <div class="ngf-bar-container">
+                                    <div id="bar-ngf-gain" class="ngf-bar-fill ngf" style="height: 100%;">
+                                        <div id="bar-ngf-shield-glow" class="ngf-shield-neon"></div>
+                                    </div>
+                                </div>
+                                <span class="ngf-bar-label" style="color: var(--color-hynix-blue); font-weight: 700;">국민성장펀드</span>
+                                <span id="lbl-bar-ngf-val" class="ngf-bar-val text-blue">1.5억</span>
+                            </div>
+                        </div>
+
+                        <!-- Legend -->
+                        <div style="display: flex; justify-content: center; gap: 14px; margin-top: 16px; font-size: 0.72rem; font-weight: 600;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="width: 8px; height: 8px; background-color: #94a3b8; display: inline-block; border-radius: 2px;"></span> 세후 평가액
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="width: 8px; height: 8px; background-color: #ef4444; display: inline-block; border-radius: 2px;"></span> 실제 자산 손실
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="width: 8px; height: 8px; background-color: var(--color-hynix-blue); display: inline-block; border-radius: 2px;"></span> 국민성장 실수령액
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="width: 8px; height: 8px; border: 1px dashed var(--color-user); background-color: rgba(16,185,129,0.05); display: inline-block; border-radius: 2px;"></span> 손실 흡수구간
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Perforated Tax Save Receipt Card -->
+                    <div class="receipt-card">
+                        <!-- Sub Tab Switcher: Simple vs Detailed inside Receipt -->
+                        <div class="sub-tab-switcher">
+                            <button class="sub-tab-btn active" id="ngf-sub-simple" onclick="switchNgfResultTab('simple')">📄 간단히 요약</button>
+                            <button class="sub-tab-btn" id="ngf-sub-detailed" onclick="switchNgfResultTab('detailed')">🔍 자세히 분석</button>
+                        </div>
+
+                        <div class="receipt-header">
+                            <span class="receipt-logo">NATIONAL GROWTH FUND RECEIPT</span>
+                            <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">NO. NGF-2026-0526</span>
+                        </div>
+                        
+                        <div class="receipt-title-box">
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 2px;">종합 혜택 세후 이자율 환산 결과</div>
+                            <div class="receipt-main-cagr" id="lbl-ngf-cagr-equivalent">연 0.0% 적금 효과!</div>
+                        </div>
+                        
+                        <!-- Sub Content 1: Simple Summary View -->
+                        <div id="receipt-content-simple" class="receipt-sub-content active">
+                            <div class="receipt-body">
+                                <div class="receipt-row">
+                                    <span>5년 동안 내가 붓는 총 원금</span>
+                                    <span id="lbl-rec-simple-principal" class="receipt-bold">0원</span>
+                                </div>
+                                <div class="receipt-row">
+                                    <span>5년 동안 환급·절세받는 세금 합계</span>
+                                    <span id="lbl-rec-simple-taxsave" style="color: var(--color-user); font-weight: 800;">+0원</span>
+                                </div>
+                                <div class="receipt-row">
+                                    <span>5년 만기 예상 펀드 세후 수익</span>
+                                    <span id="lbl-rec-simple-fundgain" class="receipt-bold">+0원</span>
+                                </div>
+                                <div class="receipt-divider"></div>
+                                <div class="receipt-row receipt-total">
+                                    <span>5년 만기 최종 세후 실수령 총액</span>
+                                    <span id="lbl-rec-simple-total">0원</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sub Content 2: Detailed Breakdown View -->
+                        <div id="receipt-content-detailed" class="receipt-sub-content">
+                            <div class="receipt-body">
+                                <div class="receipt-row">
+                                    <span>5년 총 납입 투자 원금</span>
+                                    <span id="lbl-rec-principal" class="receipt-bold">0원</span>
+                                </div>
+                                <div class="receipt-row">
+                                    <span>매년 연말정산 소득공제 환급금 합계</span>
+                                    <span id="lbl-rec-refund" style="color: var(--color-user); font-weight: 700;">+0원</span>
+                                </div>
+                                <div class="receipt-row" id="row-rec-shield">
+                                    <span>배당소득 종합세율 우회 절세 합계</span>
+                                    <span id="lbl-rec-shield" style="color: var(--color-gold); font-weight: 700;">+0원</span>
+                                </div>
+                                <div class="receipt-row">
+                                    <span>만기 펀드 자본 세후 실수익 (9.9%)</span>
+                                    <span id="lbl-rec-return" class="receipt-bold">+0원</span>
+                                </div>
+                                <div class="receipt-row" style="background: rgba(16,185,129,0.06); padding: 6px 10px; border-radius: 6px; font-size: 0.72rem; align-items: center;">
+                                    <span style="color: var(--color-user); font-weight: 800;"><i class="fa-solid fa-circle-check"></i> 농어촌특별세 특례 비과세</span>
+                                    <span style="color: var(--color-user); font-weight: 700; margin-left: auto;">감면액 20% 전액 면제!</span>
+                                </div>
+                                <div class="receipt-divider"></div>
+                                <div class="receipt-row receipt-total">
+                                    <span>만기 세후 총 실수령액</span>
+                                    <span id="lbl-rec-total">0원</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="receipt-footer" style="margin-bottom: 14px;">
+                            * 본 시뮬레이션은 구간 소득공제(투자 3, 5, 7천만 차등 공제율), 배당소득 9.9% 분리과세 절세액, 20% 정부 후순위 손실보전 및 2026년 5월 12일 신설 개정된 소득세 감면분 농어촌특별세 비과세 혜택을 복합 연동한 실질 CAGR 기준입니다. 시중 은행 적금 금리(세후 일반과세 15.4% 기준)로 세전 환산해 드립니다.
+                        </div>
+                        
+                        <!-- Premium Receipt Download Button -->
+                        <button class="receipt-download-btn" onclick="downloadReceiptImage()" style="width: 100%; border: none; background: linear-gradient(135deg, var(--color-hynix-blue), #2563eb); color: white; font-family: var(--font-heading); font-size: 0.8rem; font-weight: 800; padding: 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: var(--transition-fast); box-shadow: var(--shadow-sm); z-index: 5; position: relative;">
+                            <i class="fa-solid fa-download"></i> 절세 영수증 이미지 저장 (PNG)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Tab 3: Hynix Real-time Wage Clock -->
+        <div id="content-clock" class="main-tab-content">
+            <div class="card-panel" style="text-align: center; margin-bottom: 24px;">
+                <h2 class="card-title" style="justify-content: center; margin-bottom: 12px;">
+                    <i class="fa-solid fa-clock" style="color: var(--color-gold);"></i> 실시간 하이닉스 급여시계
+                </h2>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto 24px auto;">
+                    선택한 직급Preset의 성과급 포함 세전 연봉을 기준으로 실시간으로 적립되고 있는 금액을 다양한 센스있는 비주얼 모드로 감상해 보세요.
+                </p>
+
+                <!-- Time Reference Switcher -->
+                <div class="sub-tab-switcher" style="max-width: 320px; margin: 0 auto 16px auto; background: rgba(15, 82, 186, 0.05); border-color: rgba(15, 82, 186, 0.15);">
+                    <button class="sub-tab-btn active" id="clock-ref-year" onclick="switchClockRef('year')">📅 올해 누적 급여</button>
+                    <button class="sub-tab-btn" id="clock-ref-today" onclick="switchClockRef('today')">☀️ 오늘 하루 급여</button>
+                </div>
+
+                <!-- Clock Mode Toggle Sub-Switcher -->
+                <div class="sub-tab-switcher" style="max-width: 500px; margin: 0 auto 28px auto;">
+                    <button class="sub-tab-btn active" id="clock-mode-odometer" onclick="switchClockMode('odometer')">📟 금빛 전광판</button>
+                    <button class="sub-tab-btn" id="clock-mode-hourglass" onclick="switchClockMode('hourglass')">⏳ 동전 모래시계</button>
+                    <button class="sub-tab-btn" id="clock-mode-matcher" onclick="switchClockMode('matcher')">🛍️ 소비재 매칭</button>
+                </div>
+
+                <!-- Clock Mode 1 Panel: Digital Odometer -->
+                <div id="clock-panel-odometer" class="clock-mode-panel active">
+                    <div class="odometer-card" style="background: linear-gradient(135deg, #0f172a, #1e293b); padding: 48px 24px; border-radius: 20px; border: 2px solid var(--color-gold); box-shadow: 0 15px 35px rgba(217, 119, 6, 0.15); max-width: 700px; margin: 0 auto; position: relative; overflow: hidden;">
+                        <div class="odometer-glow" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(217, 119, 6, 0.08) 0%, transparent 70%); pointer-events: none;"></div>
+                        <div style="font-size: 0.78rem; color: var(--color-gold); font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <span class="pulsing-red-dot"></span> LIVE TICKING WAGE ACCUMULATOR
+                        </div>
+                        <div class="odometer-large-text" id="live-odometer-text">0.00원</div>
+                        
+                        <div style="display: flex; justify-content: center; gap: 24px; margin-top: 24px; font-size: 0.8rem; color: #94a3b8; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 20px;">
+                            <div>기본급+성과급 합계: <strong id="clock-lbl-annual-salary" style="color: white;">0원</strong></div>
+                            <div style="width: 1px; height: 14px; background: rgba(255,255,255,0.15);"></div>
+                            <div>1초당 급여: <strong id="clock-lbl-pay-per-second" style="color: var(--color-gold);">0원</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clock Mode 2 Panel: HTML5 Canvas Coin Hourglass -->
+                <div id="clock-panel-hourglass" class="clock-mode-panel">
+                    <div style="max-width: 600px; margin: 0 auto;">
+                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px;">
+                            금빛 동전들이 실시간으로 화면 위에서 뚝뚝 떨어져 차곡차곡 쌓이는 모습을 감상하세요. (중력 및 실시간 적립 물리 시뮬레이션)
+                        </p>
+                        <div style="background-color: #0f172a; border-radius: var(--radius-md); border: 2.5px solid var(--color-gold); overflow: hidden; position: relative; width: 100%; height: 320px; box-shadow: var(--shadow-lg);">
+                            <canvas id="coin-hourglass-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
+                            <div style="position: absolute; bottom: 16px; left: 16px; font-family: var(--font-heading); color: white; font-weight: 800; font-size: 1.15rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 6px; pointer-events: none;">
+                                누적액: <span id="hourglass-cumulative-text" style="color: var(--color-gold);">0원</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clock Mode 3 Panel: Consumption Matcher Grid -->
+                <div id="clock-panel-matcher" class="clock-mode-panel">
+                    <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 24px;">
+                        하이닉스 임직원이 숨만 쉬고 있는 동안, 실시간으로 소비재(커피, 치킨 등)를 몇 개씩 벌어들이고 있는지 실시간 환산표입니다.
+                    </p>
+                    
+                    <div class="matcher-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 800px; margin: 0 auto;">
+                        <div class="matcher-card" style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 14px; text-align: left; transition: var(--transition-fast);">
+                            <div style="font-size: 2.2rem;">☕</div>
+                            <div>
+                                <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700;">스타벅스 아아 (4,500원)</div>
+                                <div style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #15803d;" id="matcher-val-coffee">0.0잔</div>
+                            </div>
+                        </div>
+                        
+                        <div class="matcher-card" style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 14px; text-align: left; transition: var(--transition-fast);">
+                            <div style="font-size: 2.2rem;">🍗</div>
+                            <div>
+                                <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700;">교촌치킨 한마리 (22,000원)</div>
+                                <div style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #b45309;" id="matcher-val-chicken">0.0마리</div>
+                            </div>
+                        </div>
+
+                        <div class="matcher-card" style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 14px; text-align: left; transition: var(--transition-fast);">
+                            <div style="font-size: 2.2rem;">🍜</div>
+                            <div>
+                                <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700;">신라면 큰사발 (1,100원)</div>
+                                <div style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #dc2626;" id="matcher-val-ramyun">0.0개</div>
+                            </div>
+                        </div>
+
+                        <div class="matcher-card" style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 14px; text-align: left; transition: var(--transition-fast);">
+                            <div style="font-size: 2.2rem;">🎧</div>
+                            <div>
+                                <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700;">에어팟 프로 2 (350,000원)</div>
+                                <div style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #475569;" id="matcher-val-airpods">0.0개</div>
+                            </div>
+                        </div>
+
+                        <div class="matcher-card" style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 14px; text-align: left; transition: var(--transition-fast);">
+                            <div style="font-size: 2.2rem;">🍓</div>
+                            <div>
+                                <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700;">달콤 왕가 탕후루 (4,000원)</div>
+                                <div style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #ec4899;" id="matcher-val-tanghulu">0.0꼬치</div>
+                            </div>
+                        </div>
+
+                        <div class="matcher-card" style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 14px; text-align: left; transition: var(--transition-fast);">
+                            <div style="font-size: 2.2rem;">🔩</div>
+                            <div>
+                                <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700;">제네시스 G80 범퍼 나사 (1,500원)</div>
+                                <div style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #0284c7;" id="matcher-val-screw">0.0개</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Reference Disclaimer -->
+        <footer>
+            <p>본 연봉 시뮬레이션은 <a href="https://www.hankyung.com" target="_blank">한국경제</a>, <a href="https://www.chosun.com" target="_blank">조선일보</a> 등 주요 언론 보도 내용 및 SK하이닉스의 공식 성과급 기준(영업이익의 10% 분배 및 지급 한도 상한 폐지), 그리고 금융투자업계의 2026~2027년 컨센서스 자료를 토대로 정교하게 시뮬레이션 되었습니다. 각 개인의 연봉, 비과세 급여 조건, 소득공제 내역 및 이연 지급 방식의 차이에 따라 실제 수령액과는 미세한 차이가 발생할 수 있습니다.</p>
+            <p style="margin-top: 12px; font-weight: 500;">&copy; 2026 Premium Salary Simulator for SK Hynix. All rights reserved.</p>
+        </footer>
+        
+    </div>
+
+    <!-- Custom Logic Script -->
+    <script src="app.js"></script>
+</body>
+</html>

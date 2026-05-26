@@ -2,6 +2,7 @@ const CACHE_NAME = 'hynix-me-simulator-v1';
 const ASSETS = [
   './',
   './index.html',
+  './hynix.html',
   './style.css',
   './app.js',
   './icon.png',
