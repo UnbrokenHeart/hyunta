@@ -1,0 +1,18 @@
+{
+  "name": "SK 하이닉스 vs 내 연봉 & 자산 격차 시뮬레이터",
+  "short_name": "하이닉스 비교기",
+  "description": "SK 하이닉스 대박 성과급 데이터를 기반으로 4대 보험과 소득세를 정밀 대조하고, 미국 지수 투자 시 벌어지는 자산 격차 및 실시간 급여시계를 감상하는 대시보드",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f52ba",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
